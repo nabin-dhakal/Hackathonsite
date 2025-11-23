@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CRM Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+  <header class="bg-white border-b sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-semibold">CRM Team Dashboard</h1>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+    {% if messages %}
+      <div class="space-y-2">
+        {% for message in messages %}
+          <div class="rounded-lg px-4 py-3 text-sm
+            {% if message.tags == 'success' %} bg-green-50 text-green-800 border border-green-200
+            {% elif message.tags == 'warning' %} bg-yellow-50 text-yellow-800 border border-yellow-200
+            {% elif message.tags == 'error' %} bg-red-50 text-red-800 border border-red-200
+            {% else %} bg-blue-50 text-blue-800 border border-blue-200 {% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <section class="bg-white rounded-2xl shadow p-5 border">
+      <form method="post" action="{% url 'send_bulk_email' %}" id="bulkEmailForm" class="space-y-4">
+        {% csrf_token %}
+        <div class="flex items-center justify-between gap-4 flex-wrap">
+          <div class="space-y-1">
+            <h2 class="text-lg font-semibold">Send Email</h2>
+            <p class="text-sm text-gray-500">Choose recipients and compose your message.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <label for="recipient_option" class="text-sm font-medium text-gray-700">Recipients</label>
+            <select id="recipient_option" name="recipient_option"
+                    class="border rounded-lg px-3 py-2 text-sm"
+                    onchange="toggleRecipientControls(this.value)">
+              <option value="selected_checkbox">Selected via checkbox</option>
+              <option value="all">All Teams</option>
+              <option value="status_selected">All SELECTED Teams</option>
+              <option value="status_not_selected">All NOT SELECTED Teams</option>
+              <option value="filter_notes">Teams with Notes (filter)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="filterNotesSection" class="hidden">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Notes contains</label>
+          <input type="text" name="notes_filter" placeholder="e.g., travelling"
+                 class="w-full border rounded-lg px-3 py-2 text-sm" />
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+            <input type="text" name="subject" required
+                   class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Subject" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+            <textarea name="message" rows="5" required
+                      class="w-full border rounded-lg px-3 py-2 text-sm"
+                      placeholder="Write your message…"></textarea>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end">
+          <button type="submit"
+                  class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
+            Send Email
+          </button>
+        </div>
+
+        <p class="text-xs text-gray-500">
+          Tip: If “Selected via checkbox” is chosen, only teams you tick in the table will receive the email.
+        </p>
+      </form>
+    </section>
+
+    <section class="bg-white rounded-2xl shadow p-5 border">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">Teams</h2>
+        <div class="flex items-center gap-3">
+          <label class="inline-flex items-center gap-2 text-sm">
+            <input id="selectAll" type="checkbox" class="w-4 h-4 rounded border-gray-300"
+                   onclick="toggleSelectAll(this)" />
+            <span>Select All</span>
+          </label>
+          <span class="text-xs text-gray-500" id="selectedCount">0 selected</span>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full border border-gray-200 rounded-lg overflow-hidden">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 text-left text-xs font-medium text-gray-600 border-b">Pick</th>
+              <th class="px-3 py-2 text-left text-xs font-medium text-gray-600 border-b">Team</th>
+              <th class="px-3 py-2 text-left text-xs font-medium text-gray-600 border-b">Institution</th>
+              <th class="px-3 py-2 text-left text-xs font-medium text-gray-600 border-b">Leader</th>
+              <th class="px-3 py-2 text-left text-xs font-medium text-gray-600 border-b">Status</th>
+              <th class="px-3 py-2 text-left text-xs font-medium text-gray-600 border-b">Notes</th>
+              <th class="px-3 py-2 text-left text-xs font-medium text-gray-600 border-b">Update</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            {% for team in teams %}
+              <tr class="hover:bg-gray-50">
+                <td class="px-3 py-2 align-top">
+                  <input type="checkbox" name="team_ids" form="bulkEmailForm"
+                         value="{{ team.id }}" class="rowCheck w-4 h-4 rounded border-gray-300"
+                         onchange="updateSelectedCount()" />
+                </td>
+
+                <td class="px-3 py-2 align-top">
+                  <div class="font-medium">{{ team.Team_name }}</div>
+                  <div class="text-xs text-gray-500">#{{ team.id }}</div>
+                </td>
+
+                <td class="px-3 py-2 align-top">
+                  <div class="text-sm">{{ team.institution }}</div>
+                </td>
+
+                <td class="px-3 py-2 align-top">
+                  <div class="text-sm">{{ team.leader_name }}</div>
+                  <a href="mailto:{{ team.leader_email }}" class="text-xs text-blue-600 hover:underline">
+                    {{ team.leader_email }}
+                  </a>
+                  {% if team.leader_phone %}
+                    <div class="text-xs text-gray-500">{{ team.leader_phone }}</div>
+                  {% endif %}
+                </td>
+
+                <td class="px-3 py-2 align-top">
+                  {% if team.status == 'SELECTED' %}
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Selected</span>
+                  {% elif team.status == 'NOT_SELECTED' %}
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Not Selected</span>
+                  {% else %}
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Pending</span>
+                  {% endif %}
+                </td>
+
+                <td class="px-3 py-2 align-top">
+                  <div class="text-sm whitespace-pre-wrap">{{ team.notes }}</div>
+                </td>
+
+                <td class="px-3 py-2 align-top">
+                  <form method="post" action="{% url 'update_team_status' team.id %}" class="space-y-2">
+                    {% csrf_token %}
+                    <div>
+                      <label class="sr-only">Status</label>
+                      <select name="status" class="border rounded-lg px-2 py-1 text-sm">
+                        <option value="PENDING" {% if team.status == 'PENDING' %}selected{% endif %}>Pending</option>
+                        <option value="SELECTED" {% if team.status == 'SELECTED' %}selected{% endif %}>Selected</option>
+                        <option value="NOT_SELECTED" {% if team.status == 'NOT_SELECTED' %}selected{% endif %}>Not Selected</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="sr-only">Notes</label>
+                      <input type="text" name="notes" value="{{ team.notes|default_if_none:'' }}"
+                             class="w-full border rounded-lg px-2 py-1 text-sm" placeholder="Notes" />
+                    </div>
+                    <button type="submit"
+                            class="w-full bg-gray-900 hover:bg-black text-white text-xs font-medium px-3 py-1.5 rounded-lg">
+                      Update
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="px-3 py-6 text-center text-sm text-gray-500">
+                  No teams found.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Toggle recipient controls visibility
+    function toggleRecipientControls(value) {
+      const filterNotes = document.getElementById('filterNotesSection');
+      const selectAllBox = document.getElementById('selectAll');
+
+      // Show/Hide notes filter
+      filterNotes.classList.toggle('hidden', value !== 'filter_notes');
+
+      // When not using checkboxes, uncheck all
+      if (value !== 'selected_checkbox') {
+        uncheckAll();
+      }
+
+      // Disable "Select All" when not using checkboxes
+      selectAllBox.disabled = (value !== 'selected_checkbox');
+      if (selectAllBox.disabled) selectAllBox.checked = false;
+
+      updateSelectedCount();
+    }
+
+    // Select all / none
+    function toggleSelectAll(master) {
+      const checks = document.querySelectorAll('.rowCheck');
+      checks.forEach(ch => { ch.checked = master.checked; });
+      updateSelectedCount();
+    }
+
+    function uncheckAll() {
+      const checks = document.querySelectorAll('.rowCheck');
+      const master = document.getElementById('selectAll');
+      checks.forEach(ch => ch.checked = false);
+      if (master) master.checked = false;
+    }
+
+    // Update selected count label
+    function updateSelectedCount() {
+      const checks = document.querySelectorAll('.rowCheck');
+      const count = Array.from(checks).filter(ch => ch.checked).length;
+      const label = document.getElementById('selectedCount');
+      label.textContent = `${count} selected`;
+    }
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', function () {
+      toggleRecipientControls(document.getElementById('recipient_option').value);
+      updateSelectedCount();
+    });
+  </script>
+</body>
+</html>

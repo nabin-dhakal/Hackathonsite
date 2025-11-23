@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .footer { margin-top: 20px; font-size: 0.9em; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Registration Confirmation</h1>
+        </div>
+        
+        <p>Hello,</p>
+        
+        <p>Thank you for registering for <strong>{{ event_name }}</strong>!</p>
+        
+        <h3>Your Team Details:</h3>
+        <ul>
+            <li><strong>Team Name:</strong> {{ team_name }}</li>
+            <li><strong>Theme:</strong> {{ theme }}</li>
+            <li><strong>Institution:</strong> {{ institution }}</li>
+        </ul>
+        
+        <p>We have successfully received your registration. Please keep this email for your records.</p>
+        
+        <p>If you have any questions, please contact us at <a href="mailto:{{ contact_email }}">{{ contact_email }}</a></p>
+        
+        <div class="footer">
+            <p>Best regards,<br>The {{ event_name }} Team</p>
+        </div>
+    </div>
+</body>
+</html>
